@@ -5,6 +5,7 @@ import tensorflow as tf
 
 
 def _preprocess_shape(h_image, w_image, image_size_max=630, h_down_rate=14, w_down_rate=14):
+
     # Flatten the tensors
     h_image = tf.squeeze(h_image)
     w_image = tf.squeeze(w_image)
@@ -56,22 +57,20 @@ def lookup_descriptor_bilinear(keypoint: np.ndarray, descriptor_map: np.ndarray)
     Uses bilinear interpolation to find descriptor value at non-integer
     positions.
 
-    Args:
-      keypoint: 2-dim numpy array containing (x, y) keypoint image coordinates.
-      descriptor_map: (H, W, D) numpy array representing a dense descriptor map.
-
-    Returns:
-      D-dim descriptor value at the input 'keypoint' location.
-
-    Raises:
-      ValueError, if kepoint position is out of bounds.
+    :param keypoint: 2-dim numpy array containing (x, y) keypoint image coordinates.
+    :type keypoint: np.ndarray
+    :param descriptor_map: (H, W, D) numpy array representing a dense descriptor map.
+    :type descriptor_map: np.ndarray
+    :raises ValueError: if kepoint position is out of bounds.
+    :return: D-dim descriptor value at the input 'keypoint' location.
+    :rtype: np.ndarray
     """
 
     height, width = np.shape(descriptor_map)[:2]
     if keypoint[0] < 0 or keypoint[0] > width or keypoint[1] < 0 or keypoint[1] > height:
         raise ValueError(
-            "Keypoint position (%f, %f) is out of descriptor map bounds (%i w x"
-            " %i h)." % (keypoint[0], keypoint[1], width, height)
+            f"Keypoint position ({keypoint[0]}, {keypoint[1]}) is out of descriptor map bounds ({width} w x"
+            f" {height} h)."
         )
 
     x_range = [math.floor(keypoint[0])]
@@ -97,16 +96,15 @@ def get_dense_descriptors_from_sparse_keypoints(
 
     Note: implementation based on https://github.com/google-research/omniglue/blob/main/src/omniglue/omniglue_extract.py.
 
-    Args:
-      dino_features: DINO features in 1-D.
-      keypoints: Superpoint keypoint locations, in format (x, y), in pixels, shape
-        (N, 2).
-      height: image height, type tf.Tensor.int32.
-      width: image width, type tf.Tensor.int32.
-      feature_dim: DINO feature channel size, type tf.Tensor.int32.
-
-    Returns:
-      Interpolated DINO descriptors.
+    :param dense_features: Dense features in 1-D.
+    :type dense_features: np.ndarray
+    :param kps: Sparse keypoint locations, in format (x, y), in pixels, shape (N, 2).
+    :type kps: np.ndarray
+    :param image_dims: image height and width (h, w).
+    :type image_dims: tuple[int, int]
+    :param feat_dim: Dense feature channel size, defaults to 768
+    :type feat_dim: int, optional
+    :return: Interpolated Dense descriptors.
     """
 
     keypoints = tf.convert_to_tensor(kps, dtype=tf.float32)
@@ -149,17 +147,15 @@ def soft_assignment_to_match_matrix(soft_assignment: tf.Tensor, match_threshold:
     mutual nearest neighbor matches between two unique sets of keypoints. Also,
     ensures that score values for matches are above the specified threshold.
 
-    Args:
-      soft_assignment: (B, N, M) tensor, contains matching likelihood value
-        between features of different sets. N is number of features in image0, and
-        M is number of features in image1. Higher value indicates more likely to
-        match.
-      match_threshold: float, thresholding value to consider a match valid.
-
-    Returns:
-      (B, N, M) tensor of binary values. A value of 1 at index (x, y) indicates
-      a match between index 'x' (out of N) in image0 and index 'y' (out of M) in
-      image 1.
+    :param soft_assignment: (B, N, M) tensor, contains matching likelihood value between features of
+    different sets. N is number of features in image0, and M is number of features in image1. Higher
+    value indicates more likely to match.
+    :type soft_assignment: tf.Tensor
+    :param match_threshold: thresholding value to consider a match valid.
+    :type match_threshold: float
+    :return: (B, N, M) tensor of binary values. A value of 1 at index (x, y) indicates a match between
+    index 'x' (out of N) in image0 and index 'y' (out of M) in image 1.
+    :rtype: tf.Tensor
     """
 
     def _range_like(x, dim):
