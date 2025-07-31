@@ -55,11 +55,11 @@ class FlexibleOmniGlue(nn.Module):
         :type img1_shape_rc: tuple[int, int]
         :param img0_sparse_keypoints: The sparse keypoints of the first image as (x, y).
         :type img0_sparse_keypoints: np.ndarray
-        :param img0_sparse_descriptors: The sparse descriptors of the first image.
+        :param img0_sparse_descriptors: The sparse descriptors of the first image with a dimension of 256.
         :type img0_sparse_descriptors: np.ndarray
         :param img1_sparse_keypoints: The sparse keypoints of the second image as (x, y).
         :type img1_sparse_keypoints: np.ndarray
-        :param img1_sparse_descriptors: The sparse descriptors of the second image.
+        :param img1_sparse_descriptors: The sparse descriptors of the second image with a dimension of 256.
         :type img1_sparse_descriptors: np.ndarray
         :param img0_dense_descriptors: The dense descriptors of the first image.
         :type img0_dense_descriptors: np.ndarray
