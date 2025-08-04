@@ -47,11 +47,11 @@ dense_extractor = DenseExtract(
     model=torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14"),
 )
 matcher = FlexibleOmniGlue()
-matcher.load("./models/og_export")
+matcher.load("<path/to/og_export>")
 
 # Load the images
-src = imread("/data/dataset_ANHIR/images/breast_3/scale-2.5pc/HE.png")
-dst = imread("/data/dataset_ANHIR/images/breast_3/scale-2.5pc/HER2.png")
+src = imread("<path/to/src/image>")
+dst = imread("<path/to/dst/image>")
 
 # Compute the sparse and dense features
 src_sparse_kp, src_sparse_desc = sparse_extractor.compute(
