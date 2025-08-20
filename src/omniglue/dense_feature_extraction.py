@@ -1,5 +1,5 @@
 import math
-from typing import Optional, Protocol, Sequence
+from typing import Any, Optional, Protocol, Sequence
 
 import cv2
 import numpy as np
@@ -43,10 +43,10 @@ class DenseExtract:
         self.h_down_rate = self.model.patch_embed.patch_size[0]
         self.w_down_rate = self.model.patch_embed.patch_size[1]
 
-    def __call__(self, image: np.ndarray) -> np.ndarray:
-        return self.forward(image)
+    def __call__(self, image: np.ndarray, **kwargs: Any) -> np.ndarray:
+        return self.forward(image, **kwargs)
 
-    def forward(self, image: np.ndarray) -> np.ndarray:
+    def forward(self, image: np.ndarray, **kwargs: Any) -> np.ndarray:
         """Feeds image through DINO ViT model to extract features.
 
         :param image: (H, W, 3), decoded image bytes, value range [0, 255].
@@ -55,8 +55,8 @@ class DenseExtract:
         :rtype: np.ndarray
         """
 
-        image = self._resize_input_image(image)
-        image_processed = self._process_image(image)
+        image = self._resize_input_image(image, interpolation=kwargs.get("interpolation", cv2.INTER_LINEAR))
+        image_processed = self._process_image(image, normalize=kwargs.get("normalize", False))
         image_processed = image_processed.unsqueeze(0).float().to(self.device)
         features = self.extract_feature(image_processed)
         features = features.squeeze(0).permute(1, 2, 0).cpu().numpy()
@@ -92,14 +92,27 @@ class DenseExtract:
 
         return image
 
-    def _process_image(self, image: np.ndarray, normalize: bool = True) -> torch.Tensor:
+    def _process_image(self, image: np.ndarray, normalize: bool = False) -> torch.Tensor:
         """Turn image into pytorch tensor and normalize it using ImageNet mean/std."""
 
-        mean = np.zeros((3,))
-        std = np.ones((3,))
+        dim = 3
+        if len(image.shape) < 3:
+            image = np.dstack([image for _ in range(dim)])
+
+        mean = np.zeros((dim,))
+        std = np.ones((dim,))
+        # Normalize using ImageNet mean/std
         if normalize:
-            mean = np.array([0.485, 0.456, 0.406])
-            std = np.array([0.229, 0.224, 0.225])
+            mean = (
+                np.array([0.485, 0.456, 0.406])
+                if dim == 3
+                else np.array([0.2125 * 0.485 + 0.7154 * 0.456 + 0.0721 * 0.406 for _ in range(dim)])
+            )
+            std = (
+                np.array([0.229, 0.224, 0.225])
+                if dim == 3
+                else np.array([0.2125 * 0.229 + 0.7154 * 0.224 + 0.0721 * 0.225 for _ in range(dim)])
+            )
 
         image_processed = image / 255.0
         image_processed = (image_processed - mean) / std
