@@ -3,7 +3,6 @@ from typing import Optional, Protocol, Sequence
 
 import cv2
 import numpy as np
-import tensorflow as tf
 import torch
 from torch._prims_common import DeviceLikeType
 from typing_extensions import Self
@@ -128,46 +127,40 @@ class DenseExtract:
 
         return out
 
-    def _preprocess_shape(self, h_image, w_image, image_size_max=630, h_down_rate=14, w_down_rate=14):
+    def _preprocess_shape(
+        self,
+        h_image: torch.Tensor,
+        w_image: torch.Tensor,
+        image_size_max: int = 630,
+        h_down_rate: int = 14,
+        w_down_rate: int = 14,
+    ):
         # Flatten the tensors
-        h_image = tf.squeeze(h_image)
-        w_image = tf.squeeze(w_image)
-        # logging.info(h_image, w_image)
+        h_image = torch.squeeze(h_image)
+        w_image = torch.squeeze(w_image)
 
-        h_larger_flag = tf.greater(h_image, w_image)
-        large_side_image = tf.maximum(h_image, w_image)
+        large_side_image = torch.maximum(h_image, w_image)
 
-        # Function to calculate new dimensions when height is larger
-        def resize_h_larger():
-            h_image_target = image_size_max
-            w_image_target = tf.cast(image_size_max * w_image / h_image, tf.int32)
-            return h_image_target, w_image_target
+        h_image_target, w_image_target = h_image, w_image
+        # Calculate new dimensions when height is larger
+        if torch.greater(large_side_image, image_size_max) and torch.greater(h_image, w_image):
+            h_image_target = torch.tensor(image_size_max, dtype=torch.int32).squeeze()
+            w_image_target = (image_size_max * w_image / h_image).type(torch.int32)
+        # Calculate new dimensions when width is larger or equal
+        elif torch.greater(large_side_image, image_size_max):
+            w_image_target = torch.tensor(image_size_max, dtype=torch.int32).squeeze()
+            h_image_target = (image_size_max * h_image / w_image).type(torch.int32)
 
-        # Function to calculate new dimensions when width is larger or equal
-        def resize_w_larger_or_equal():
-            w_image_target = image_size_max
-            h_image_target = tf.cast(image_size_max * h_image / w_image, tf.int32)
-            return h_image_target, w_image_target
-
-        # Function to keep original dimensions
-        def keep_original():
-            return h_image, w_image
-
-        h_image_target, w_image_target = tf.cond(
-            tf.greater(large_side_image, image_size_max),
-            lambda: tf.cond(h_larger_flag, resize_h_larger, resize_w_larger_or_equal),
-            keep_original,
-        )
-
-        # resize to be divided by patch size
+        # Resize to be divided by patch size
         h = h_image_target // h_down_rate
         w = w_image_target // w_down_rate
         h_resize = h * h_down_rate
         w_resize = w * w_down_rate
 
         # Expand dimensions
-        h_resize = tf.expand_dims(h_resize, 0)
-        w_resize = tf.expand_dims(w_resize, 0)
+        assert isinstance(h_resize, torch.Tensor) and isinstance(w_resize, torch.Tensor)
+        h_resize = torch.unsqueeze(h_resize, 0)
+        w_resize = torch.unsqueeze(w_resize, 0)
 
         return h_resize, w_resize
 
@@ -229,13 +222,13 @@ class DenseExtract:
         :return: Interpolated Dense descriptors.
         """
 
-        keypoints = tf.convert_to_tensor(kps, dtype=tf.float32)
-        height = tf.convert_to_tensor(image_dims[0], dtype=tf.int32)
-        width = tf.convert_to_tensor(image_dims[1], dtype=tf.int32)
-        feature_dim = tf.convert_to_tensor(feat_dim, dtype=tf.int32)
+        keypoints = torch.tensor(kps, dtype=torch.float32)
+        height = torch.tensor(image_dims[0], dtype=torch.int32)
+        width = torch.tensor(image_dims[1], dtype=torch.int32)
+        feature_dim = torch.tensor(feat_dim, dtype=torch.int32)
 
-        height_1d = tf.reshape(height, [1])
-        width_1d = tf.reshape(width, [1])
+        height_1d = torch.reshape(height, [1])
+        width_1d = torch.reshape(width, [1])
 
         height_1d_resized, width_1d_resized = self._preprocess_shape(
             height_1d, width_1d, image_size_max=630, h_down_rate=14, w_down_rate=14
@@ -243,19 +236,19 @@ class DenseExtract:
 
         height_feat = height_1d_resized // 14
         width_feat = width_1d_resized // 14
-        feature_dim_1d = tf.reshape(feature_dim, [1])
+        feature_dim_1d = torch.reshape(feature_dim, [1])
 
-        size_feature = tf.concat([height_feat, width_feat, feature_dim_1d], axis=0)
-        dense_features_reshaped = tf.reshape(dense_features, size_feature)
+        size_feature = torch.concat([height_feat, width_feat, feature_dim_1d])
+        dense_features_reshaped = torch.reshape(torch.tensor(dense_features), size_feature.tolist())
 
-        img_size = tf.cast(tf.concat([width_1d, height_1d], axis=0), tf.float32)
-        feature_size = tf.cast(tf.concat([width_feat, height_feat], axis=0), tf.float32)
+        img_size = torch.concat([width_1d, height_1d]).type(torch.float32)
+        feature_size = torch.concat([width_feat, height_feat]).type(torch.float32)
 
-        keypoints_feature = keypoints / tf.expand_dims(img_size, axis=0) * tf.expand_dims(feature_size, axis=0)
+        keypoints_feature = keypoints / torch.unsqueeze(img_size, dim=0) * torch.unsqueeze(feature_size, dim=0)
 
         dense_descriptors = []
         for kp in keypoints_feature:
             dense_descriptors.append(self._lookup_descriptor_bilinear(kp.numpy(), dense_features_reshaped.numpy()))
-        dense_descriptors = tf.convert_to_tensor(np.array(dense_descriptors), dtype=tf.float32)
+        dense_descriptors = np.array(dense_descriptors, dtype=np.float32)
 
         return dense_descriptors
