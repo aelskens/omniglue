@@ -218,7 +218,12 @@ class DenseExtract:
         return bilinear_descriptor
 
     def get_dense_descriptors_from_sparse_keypoints(
-        self, dense_features: np.ndarray, kps: np.ndarray, image_dims: tuple[int, int], feat_dim: int = 768
+        self,
+        dense_features: np.ndarray,
+        kps: np.ndarray,
+        image_dims: tuple[int, int],
+        patch_size: int = 14,
+        feat_dim: int = 768,
     ):
         """Get dense descriptors from sparse keypoints.
 
@@ -230,7 +235,9 @@ class DenseExtract:
         :type kps: np.ndarray
         :param image_dims: image height and width (h, w).
         :type image_dims: tuple[int, int]
-        :param feat_dim: Dense feature channel size, defaults to 768
+        :param patch_size: The patch size, defaults to 14.
+        :type patch_size: int, optional
+        :param feat_dim: Dense feature channel size, defaults to 768.
         :type feat_dim: int, optional
         :return: Interpolated Dense descriptors.
         """
@@ -244,11 +251,11 @@ class DenseExtract:
         width_1d = torch.reshape(width, [1])
 
         height_1d_resized, width_1d_resized = self._preprocess_shape(
-            height_1d, width_1d, image_size_max=630, h_down_rate=14, w_down_rate=14
+            height_1d, width_1d, image_size_max=630, h_down_rate=patch_size, w_down_rate=patch_size
         )
 
-        height_feat = height_1d_resized // 14
-        width_feat = width_1d_resized // 14
+        height_feat = height_1d_resized // patch_size
+        width_feat = width_1d_resized // patch_size
         feature_dim_1d = torch.reshape(feature_dim, [1])
 
         size_feature = torch.concat([height_feat, width_feat, feature_dim_1d])
