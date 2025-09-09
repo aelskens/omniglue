@@ -99,8 +99,8 @@ class DenseExtract:
         if len(image.shape) < 3:
             image = np.dstack([image for _ in range(dim)])
 
-        mean = np.zeros((dim,))
-        std = np.ones((dim,))
+        mean = np.ones((dim,)) * 0.5
+        std = np.ones((dim,)) * 0.5
         # Normalize using ImageNet mean/std
         if normalize:
             mean = (
