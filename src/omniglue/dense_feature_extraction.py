@@ -56,7 +56,7 @@ class DenseExtract:
         """
 
         image = self._resize_input_image(image, interpolation=kwargs.get("interpolation", cv2.INTER_LINEAR))
-        image_processed = self._process_image(image, normalize=kwargs.get("normalize", False))
+        image_processed = self._process_image(image, normalize=kwargs.get("normalize", None))
         image_processed = image_processed.unsqueeze(0).float().to(self.device)
         features = self.extract_feature(image_processed)
         features = features.squeeze(0).permute(1, 2, 0).cpu().numpy()
@@ -92,27 +92,35 @@ class DenseExtract:
 
         return image
 
-    def _process_image(self, image: np.ndarray, normalize: bool = False) -> torch.Tensor:
-        """Turn image into pytorch tensor and normalize it using ImageNet mean/std."""
+    def _process_image(self, image: np.ndarray, normalize: str | None = None) -> torch.Tensor:
+        """Turn image into pytorch tensor and normalize it using mean/std extracted from ImageNet
+        or from a sample of TCGA.
+
+        :param image: The image to process.
+        :type image: np.ndarray
+        :param normalize: The normalization method to apply. It can either be `imagenet`, `tcga` or
+        `None`, defaults to None.
+        :type normalize: str | None, optional
+        :return: The processed image.
+        :rtype: torch.Tensor
+        """
 
         dim = 3
         if len(image.shape) < 3:
             image = np.dstack([image for _ in range(dim)])
+            dim = 2
 
         mean = np.ones((dim,)) * 0.5
         std = np.ones((dim,)) * 0.5
-        # Normalize using ImageNet mean/std
-        if normalize:
-            mean = (
-                np.array([0.485, 0.456, 0.406])
-                if dim == 3
-                else np.array([0.2125 * 0.485 + 0.7154 * 0.456 + 0.0721 * 0.406 for _ in range(dim)])
-            )
-            std = (
-                np.array([0.229, 0.224, 0.225])
-                if dim == 3
-                else np.array([0.2125 * 0.229 + 0.7154 * 0.224 + 0.0721 * 0.225 for _ in range(dim)])
-            )
+        if dim == 3:
+            # Normalize using ImageNet mean/std
+            if normalize == "imagenet":
+                mean = np.array([0.485, 0.456, 0.406])
+                std = np.array([0.229, 0.224, 0.225])
+            # Normalize using a sample of TCGA mean/std
+            elif normalize == "tcga":
+                mean = np.array([0.859, 0.803, 0.844])
+                std = np.array([0.041, 0.043, 0.039])
 
         image_processed = image / 255.0
         image_processed = (image_processed - mean) / std
