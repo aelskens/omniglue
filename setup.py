@@ -22,6 +22,8 @@ AUTHOR = "Arthur Elskens"
 REQUIRES_PYTHON = ">=3.8"
 VERSION = "0.0.0"
 
+EXTRAS = {}
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 # Import the README and use it as the long-description.
@@ -249,10 +251,7 @@ setup(
     extras_require=EXTRAS,
     include_package_data=True,
     license="Apache License 2.0",
-    # If you want to define classifiers
     classifiers=[
-        # Trove classifiers
-        # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
         "License :: OSI Approved :: Apache License 2.0",
         "Programming Language :: Python",
         f"Programming Language :: Python :: {list(filter(lambda x: x.isnumeric() , REQUIRES_PYTHON))[0]}",
@@ -260,7 +259,6 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
-    # $ setup.py publish support.
     cmdclass={
         "bump": BumpVersion,
         "custom_build": CustomBuildCommand,
