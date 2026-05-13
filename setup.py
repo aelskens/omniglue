@@ -11,54 +11,51 @@ import os
 import sys
 from shutil import rmtree
 
-from setuptools import find_packages, setup, Command
+from setuptools import Command, find_packages, setup
 
 # Package meta-data.
-NAME = 'omniglue'
-DESCRIPTION = 'A more flexible impplementation of OmniGlue.'
-URL = 'https://github.com/aelskens/omniglue'
-EMAIL = 'arthur.elskens@ulb.be'
-AUTHOR = 'Arthur Elskens'
-REQUIRES_PYTHON = '>=3.8'
-VERSION = '0.0.0'
-
-# What packages are optional?
-EXTRAS = {
-    # 'fancy feature': ['django'],
-}
+NAME = "omniglue"
+DESCRIPTION = "A more flexible impplementation of OmniGlue."
+URL = "https://github.com/aelskens/omniglue"
+EMAIL = "arthur.elskens@ulb.be"
+AUTHOR = "Arthur Elskens"
+REQUIRES_PYTHON = ">=3.8"
+VERSION = "0.0.0"
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
 try:
-    with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-        long_description = '\n' + f.read()
+    with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
+        long_description = "\n" + f.read()
 except FileNotFoundError:
     long_description = DESCRIPTION
 
 # Load the package's __version__.py module as a dictionary.
 about = {}
 if not VERSION or VERSION == "0.0.0":
-    with open(os.path.join(here, "src", NAME, '__version__.py')) as f:
+    with open(os.path.join(here, "src", NAME, "__version__.py")) as f:
         exec(f.read(), about)
 else:
-    about['__version__'] = VERSION
+    about["__version__"] = VERSION
+
 
 def _load_from_requirements():
-    requirements_fp = os.path.join(here, 'requirements.txt')
+    requirements_fp = os.path.join(here, "requirements.txt")
     print(requirements_fp)
     if not os.path.exists(requirements_fp):
         return []
-    
+
     requirements = []
-    with io.open(requirements_fp, encoding='utf-8') as f:
+    with io.open(requirements_fp, encoding="utf-8") as f:
         requirements = f.read().splitlines()
 
     return requirements
 
 
 required = _load_from_requirements()
+
 
 class BumpVersion(Command):
     """Support setup.py bump --level=<given level> [--value=<to given value>]."""
@@ -237,24 +234,17 @@ class UploadCommand(Command):
 # Where the magic happens:
 setup(
     name=NAME,
-    version=about['__version__'],
+    version=about["__version__"],
     description=DESCRIPTION,
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     author=AUTHOR,
     author_email=EMAIL,
     # If your package require specific python version
     python_requires=REQUIRES_PYTHON,
-    # The url of the repository where this package lives
-    # url=URL,
+    url=URL,
     packages=find_packages("src", exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
-    package_dir = {"": "src"},
-    # If your package is a single module, use this instead of 'packages':
-    # py_modules=['mypackage'],
-
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
+    package_dir={"": "src"},
     install_requires=required,
     extras_require=EXTRAS,
     include_package_data=True,
@@ -263,15 +253,17 @@ setup(
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: Apache License 2.0',
-        'Programming Language :: Python',
-        f'Programming Language :: Python :: {list(filter(lambda x: x.isnumeric() , REQUIRES_PYTHON))[0]}',
+        "License :: OSI Approved :: Apache License 2.0",
+        "Programming Language :: Python",
+        f"Programming Language :: Python :: {list(filter(lambda x: x.isnumeric() , REQUIRES_PYTHON))[0]}",
         f"Programming Language :: Python :: {''.join(filter(lambda x: x in '.1234567890', REQUIRES_PYTHON))}",
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
     ],
     # $ setup.py publish support.
     cmdclass={
-        'upload': UploadCommand,
+        "bump": BumpVersion,
+        "custom_build": CustomBuildCommand,
+        "upload": UploadCommand,
     },
 )
